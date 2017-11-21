@@ -34,7 +34,8 @@ class calendar_event(object):
     def __str__(self):
         result = "(Start: %s    " % self.start
         result += "End: %s    " % self.end
-        result += "Duration: %ss, from %s to %s    );" % (self.duration, self.start_time.format("HH:mm:ss"), self.end_time.format("HH:mm:ss"))
+        result += "Duration: %ss, from %s to %s    );" % (
+            self.duration, self.start_time.format("HH:mm:ss"), self.end_time.format("HH:mm:ss"))
         return result
 
     def compare_to(self, eventB):
@@ -52,14 +53,15 @@ class calendar_event(object):
 
 class eventrange(calendar_event):
 
-    def __init__(self, start, end):
+    def __init__(self, start, end, meet_duration=30):
         super(eventrange, self).__init__(start, end)
         self.blockage = []
+        self.meet_duration = meet_duration * 60
 
     def __str__(self):
         result = super(eventrange, self).__str__()
+        result += "Blockage in Range: "
         if self.blockage:
-            result += "Blockage in Range: "
             for block in self.blockage:
                 result += " "
                 result += str(block)
@@ -72,6 +74,8 @@ class eventrange(calendar_event):
                     result += " ; "
             else:
                 result += "None."
+        else:
+            result += "None and therefore whole range is yours!"
         return result
 
     def subtract_blockage(self):  # for range instance only
@@ -100,15 +104,16 @@ class eventrange(calendar_event):
             day_counter = 0
             for i in accurate_subranges:
                 if last_free_start and accurate_subranges[i] == False:
-                    self.free.append((last_free_start, i))
+                    if (i - last_free_start) >= self.meet_duration:
+                        self.free.append((last_free_start, i))
                     last_free_start = None
                 elif (last_free_start == None) and accurate_subranges[i]:
                     last_free_start = i
-                if day_counter == self.time_duration:
-                    if last_free_start:
+                if day_counter == self.time_duration: # last second
+                    if last_free_start and (i - last_free_start) >= self.meet_duration:
                         self.free.append((last_free_start, i))
-                    day_counter = 0
                 day_counter += 1
+
 
 '''
 a = eventrange('2017-11-15T16:01:54.587619-08:00',

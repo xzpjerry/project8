@@ -73,6 +73,8 @@
       $("#time_input").append("<input type=number name=\"time_input\" id=\"hour2\" value=" + hh2 + " min=\"0\" max=\"23\"  />");
       $("#time_input").append(":");
       $("#time_input").append("<input type=number name=\"time_input\" id=\"min2\" value=" + min1 + " min=\"0\" max=\"59\"  />");
+
+      $("#duration_input").html("<input type=\"number\" name=\"duration_input\" id=\"duration_input\" value=\"30\" min=\"0\" max=\"59\"  /> minute(s)");
     }
 
     function update_time_range() 
@@ -128,11 +130,27 @@
   $("input[name='time_input']").on("input", function(){ 
     update_time_range()
     })
+
+  $('input[name="duration_input"]').on("input", function() {
+    var myself = this
+    var rslt = {duration: myself.value}
+    $.ajax({
+        type: 'POST',
+        contentType: 'application/json',
+        url:'_updateDuration',
+        dataType:'json',
+        data:JSON.stringify(rslt),
+        error: function(result) {console.log(result)}
+      })
+  })
   })
   </script>
 
 <div><h4>Time range</h4></div>
 <div id="time_input" name="time_input"></div>
+
+<div><h4>Meeting duration</h4></div>
+<div id="duration_input" name="duration_input"></div>
 
 <br /><input type="submit" value="Choose" />
 </form>

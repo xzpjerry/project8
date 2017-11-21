@@ -21,7 +21,7 @@ import httplib2   # used in oauth2 flow
 from apiclient import discovery
 
 import model
-
+from math import ceil
 ###
 # Globals
 ###
@@ -66,6 +66,10 @@ def choose():
     # I wanted to put what follows into a function, but had
     # to pull it back here because the redirect has to be a
     # 'return'
+  def worker_on(gcal_service):
+    flask.g.calendars = list_calendars(gcal_service)
+    flask.g.busy_list = get_busy(gcal_service, flask.g.calendars)
+
   app.logger.debug("Checking credentials for Google calendar access")
   credentials = valid_credentials()
   if not credentials:
@@ -75,9 +79,15 @@ def choose():
   gcal_service = get_gcal_service(credentials)
   app.logger.debug("Returned from get_gcal_service")
 
-  flask.g.calendars = list_calendars(gcal_service)
-  flask.g.busy_list = get_busy(gcal_service, flask.g.calendars)
-
+  if len(Calendars_checked) != 0:
+    for cal in Calendars_checked:
+      if Calendars_checked[cal]:
+        worker_on(gcal_service)
+        return render_template('index.html')
+  else:
+    flask.flash("Checking all the calendar.")
+    worker_on(gcal_service)
+  
   return render_template('index.html')
 
 #####
@@ -108,8 +118,11 @@ def setrange():
 
   flask.session['begin_date'] = interpret_date(begin_date)
   flask.session['end_date'] = interpret_date(end_date)
-  Set_range = model.eventrange(
-      flask.session['begin_date'], flask.session['end_date'])
+  duration = flask.session.get('duration')
+  if duration:
+    Set_range = model.eventrange(flask.session['begin_date'], flask.session['end_date'], duration)
+  else:
+    Set_range = model.eventrange(flask.session['begin_date'], flask.session['end_date'])
 
   app.logger.debug("Setrange parsed {} - {}  dates as {} - {}".format(
       begin_date, end_date,
@@ -299,6 +312,15 @@ def _update_time_range():
 
   flask.session["begin_time"] = begin_time
   flask.session["end_time"] = end_time
+  return flask.jsonify(success=True)
+
+@app.route('/_updateDuration', methods=['GET', 'POST'])
+def _update_duration():
+  result = request.get_json()['duration']
+  if result.isdigit():
+    result = ceil(float(result))
+    flask.session["duration"] = result
+    app.logger.debug("Got a updating duration request for %s mins." % result)
   return flask.jsonify(success=True)
 
 
