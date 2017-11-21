@@ -17,7 +17,7 @@ now_hour = int(now.format('HH'))
 then = now.shift(days=range_day, hours=range_hour)
 
 then_min = then.format("mm")
-RANGE = model.calendar_event(now.isoformat(), then.isoformat())
+RANGE = model.eventrange(now.isoformat(), then.isoformat(), (then.timestamp - now.timestamp)/60)
 
 def test_without():
 
